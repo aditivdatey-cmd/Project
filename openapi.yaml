@@ -1,0 +1,536 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Aegis AI Code Reviewer API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: analyze
+    description: Code analysis operations
+  - name: chat
+    description: AI chat operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /analyze/code:
+    post:
+      operationId: analyzeCode
+      tags: [analyze]
+      summary: Analyze code for bugs, security issues, and performance problems
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeCodeRequest"
+      responses:
+        "200":
+          description: Analysis results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /analyze/fix:
+    post:
+      operationId: applyFix
+      tags: [analyze]
+      summary: Apply a suggested fix to code
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyFixRequest"
+      responses:
+        "200":
+          description: Fixed code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixResult"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /chat/message:
+    post:
+      operationId: sendChatMessage
+      tags: [chat]
+      summary: Send a message to the AI debug assistant
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageRequest"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessageResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /chat/history:
+    get:
+      operationId: getChatHistory
+      tags: [chat]
+      summary: Get chat history for the current session
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Chat history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatHistory"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        username:
+          type: string
+      required:
+        - email
+        - password
+        - username
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    User:
+      type: object
+      properties:
+        id:
+          type: number
+        email:
+          type: string
+        username:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - email
+        - username
+        - createdAt
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    AnalyzeCodeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        language:
+          type: string
+        filename:
+          type: string
+      required:
+        - code
+
+    CodeIssue:
+      type: object
+      properties:
+        id:
+          type: string
+        line:
+          type: number
+        type:
+          type: string
+          enum: [bug, security, performance, style]
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        title:
+          type: string
+        explanation:
+          type: string
+        whyItMatters:
+          type: string
+        businessImpact:
+          type: string
+        suggestedFix:
+          type: string
+        fixedCode:
+          type: string
+        originalCode:
+          type: string
+        confidenceScore:
+          type: number
+        cweId:
+          type: string
+        owaspCategory:
+          type: string
+      required:
+        - id
+        - line
+        - type
+        - severity
+        - title
+        - explanation
+        - whyItMatters
+        - suggestedFix
+        - fixedCode
+        - originalCode
+        - confidenceScore
+
+    PerformanceAnalysis:
+      type: object
+      properties:
+        score:
+          type: number
+        timeComplexity:
+          type: string
+        spaceComplexity:
+          type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+        complexityData:
+          type: array
+          items:
+            type: object
+            properties:
+              n:
+                type: number
+              current:
+                type: number
+              optimized:
+                type: number
+            required:
+              - n
+              - current
+              - optimized
+      required:
+        - score
+        - timeComplexity
+        - spaceComplexity
+        - suggestions
+        - complexityData
+
+    SecurityAnalysis:
+      type: object
+      properties:
+        riskLevel:
+          type: string
+          enum: [critical, high, medium, low, safe]
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/CodeIssue"
+        score:
+          type: number
+      required:
+        - riskLevel
+        - findings
+        - score
+
+    UnitTest:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+      required:
+        - name
+        - code
+        - description
+
+    AnalysisResult:
+      type: object
+      properties:
+        language:
+          type: string
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/CodeIssue"
+        performance:
+          $ref: "#/components/schemas/PerformanceAnalysis"
+        security:
+          $ref: "#/components/schemas/SecurityAnalysis"
+        unitTests:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnitTest"
+        bugsCount:
+          type: number
+        optimizationsCount:
+          type: number
+        securityRisksCount:
+          type: number
+        analysisId:
+          type: string
+      required:
+        - language
+        - issues
+        - performance
+        - security
+        - unitTests
+        - bugsCount
+        - optimizationsCount
+        - securityRisksCount
+        - analysisId
+
+    ApplyFixRequest:
+      type: object
+      properties:
+        originalCode:
+          type: string
+        issueId:
+          type: string
+        fixedCode:
+          type: string
+      required:
+        - originalCode
+        - issueId
+        - fixedCode
+
+    FixResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        updatedCode:
+          type: string
+        diff:
+          type: string
+      required:
+        - success
+        - updatedCode
+        - diff
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        codeSnippet:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - id
+        - role
+        - content
+        - timestamp
+
+    ChatMessageRequest:
+      type: object
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+        sessionId:
+          type: string
+      required:
+        - message
+
+    ChatMessageResponse:
+      type: object
+      properties:
+        message:
+          $ref: "#/components/schemas/ChatMessage"
+        sessionId:
+          type: string
+      required:
+        - message
+        - sessionId
+
+    ChatHistory:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+        sessionId:
+          type: string
+      required:
+        - messages
+        - sessionId
